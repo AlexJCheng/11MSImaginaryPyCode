@@ -1,0 +1,53 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_argand_curve(a, b, num_points, ax):
+    z = complex(a, b)
+    points = [z**i for i in range(1, num_points + 1)]
+    real_parts = [point.real for point in points]
+    imag_parts = [point.imag for point in points]
+
+    ax.clear()
+
+    ax.plot(real_parts[0], imag_parts[0], marker='o', color='r', markersize=8, label='Starting Point')
+    ax.plot(real_parts[-1], imag_parts[-1], marker='o', color='g', markersize=8, label='Final Point')
+    ax.legend()
+
+    x_margin = np.max(np.abs(real_parts)) * 0.1
+    y_margin = np.max(np.abs(imag_parts)) * 0.1
+
+    center_x = 0
+    center_y = 0
+
+    max_distance = max(np.max(real_parts) - center_x, center_x - np.min(real_parts),
+                       np.max(imag_parts) - center_y, center_y - np.min(imag_parts))
+    max_margin = max(x_margin, y_margin, max_distance) * 1.1
+
+    if max_margin == 0:
+        max_margin = 1.0  # Prevent division by zero
+
+    ax.set_xlim(center_x - max_margin, center_x + max_margin)
+    ax.set_ylim(center_y - max_margin, center_y + max_margin)
+
+    ax.grid(True)  # Add grid lines
+
+    lines = ax.plot(real_parts, imag_parts, color='b', linestyle='-')
+
+    plt.xlabel('Real part')
+    plt.ylabel('Imaginary part')
+    ax.set_aspect('equal')  # Force the plot to be square
+
+if __name__ == "__main__":
+    fig = plt.figure(figsize=(12, 6))
+    ax = plt.axes([0.1, 0.1, 0.8, 0.8])  # Adjust the axes position
+
+    angle_a = np.pi / 6  # Choose a specific angle for a (e.g., π/3 radians)
+    angle_b = np.pi / 6  # Choose a specific angle for b (e.g., π/6 radians)
+
+    a = np.cos(angle_a)  # Using cosine function for the real part
+    b = np.sin(angle_b)  # Using sine function for the imaginary part
+    num_points = 100  # Choose the number of points
+
+    plot_argand_curve(a, b, num_points, ax)
+
+    plt.show()
