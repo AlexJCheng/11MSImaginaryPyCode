@@ -1,0 +1,106 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.widgets import Slider, TextBox, RadioButtons
+
+def plot_argand_curve(a, b, num_points, ax):
+    z = complex(a, b)
+    points = [z**i for i in range(1, num_points + 1)]
+    real_parts = [point.real for point in points]
+    imag_parts = [point.imag for point in points]
+
+    ax.clear()
+
+    ax.plot(real_parts[0], imag_parts[0], marker='o', color='r', markersize=8, label='Starting Point')
+    ax.plot(real_parts[-1], imag_parts[-1], marker='o', color='g', markersize=8, label='Final Point')
+    ax.legend()
+
+    x_margin = max(abs(max(real_parts)), abs(min(real_parts))) * 0.1
+    y_margin = max(abs(max(imag_parts)), abs(min(imag_parts))) * 0.1
+
+    center_x = 0
+    center_y = 0
+
+    max_distance = max(max(real_parts) - center_x, center_x - min(real_parts),
+                       max(imag_parts) - center_y, center_y - min(imag_parts))
+    max_margin = max(x_margin, y_margin, max_distance) * 1.1
+
+    if max_margin == 0:
+        max_margin = 1.0  # Prevent division by zero
+
+    ax.set_xlim(center_x - max_margin, center_x + max_margin)
+    ax.set_ylim(center_y - max_margin, center_y + max_margin)
+
+    ax.grid(True)  # Add grid lines
+
+    lines, = ax.plot(real_parts, imag_parts, color='b', linestyle='-')
+
+    plt.xlabel('Real part')
+    plt.ylabel('Imaginary part')
+    ax.set_aspect('equal')  # Force the plot to be square
+
+    starting_point_text = ax.text(real_parts[0], imag_parts[0], f'Starting Point: ({real_parts[0]:.2f}, {imag_parts[0]:.2f})', fontsize=10, color='r')
+    ending_point_text = ax.text(real_parts[-1], imag_parts[-1], f'Ending Point: ({real_parts[-1]:.2f}, {imag_parts[-1]:.2f})', fontsize=10, color='g')
+
+    def update(val):
+        zoom_factor = slider_zoom_factor.val
+        new_max_margin = max_margin / zoom_factor
+
+        ax.set_xlim(center_x - new_max_margin, center_x + new_max_margin)
+        ax.set_ylim(center_y - new_max_margin, center_y + new_max_margin)
+
+        fig.canvas.draw_idle()
+
+    ax_zoom_factor = plt.axes([0.3, 0.03, 0.65, 0.03], facecolor='lightgoldenrodyellow')
+    slider_zoom_factor = Slider(ax_zoom_factor, 'Zoom Factor', 0.1, 10.0, valinit=1.0)
+    slider_zoom_factor.on_changed(update)
+
+    def on_click(event):
+        if event.inaxes == ax:
+            nonlocal center_x, center_y
+            center_x, center_y = event.xdata, event.ydata
+            update(None)
+
+    fig.canvas.mpl_connect('button_press_event', on_click)
+
+def new_equation_submit(event):
+    try:
+        input_a = text_box_a.text.replace('i', 'j')
+        input_b = text_box_b.text.replace('i', 'j')
+        real, imag = map(float, (input_a.split('+')[0], input_b.split('+')[0]))
+        num_points = int(text_box_num_points.text) if text_box_num_points.text else 10
+    except ValueError:
+        if text_box_a.text == '':
+            real = 0
+        else:
+            real = float(text_box_a.text.replace('i', 'j'))
+        if text_box_b.text == '':
+            imag = 0
+        else:
+            imag = float(text_box_b.text.replace('i', 'j'))
+        num_points = int(text_box_num_points.text) if text_box_num_points.text else 10
+
+    plot_argand_curve(real, imag, num_points, ax)
+    plt.draw()
+    starting_point_text.set_position((real, imag))
+    starting_point_text.set_text(f'Starting Point: ({real:.2f}, {imag:.2f})')
+
+if __name__ == "__main__":
+    fig = plt.figure(figsize=(12, 6))
+
+    ax_input_a = plt.axes([0.05, 0.7, 0.2, 0.05], facecolor='lightgoldenrodyellow')
+    ax_input_b = plt.axes([0.05, 0.6, 0.2, 0.05], facecolor='lightgoldenrodyellow')
+    ax_input_num_points = plt.axes([0.05, 0.5, 0.2, 0.05], facecolor='lightgoldenrodyellow')
+
+    text_box_a = TextBox(ax_input_a, 'Real part (a):', initial='0')
+    text_box_b = TextBox(ax_input_b, 'Imaginary part (b):', initial='0')
+    text_box_num_points = TextBox(ax_input_num_points, 'Number of points:', initial='10')
+
+    ax = plt.axes([0.3, 0.1, 0.6, 0.8])
+    a, b, num_points = 0, 0, 10
+    plot_argand_curve(a, b, num_points, ax)
+
+    text_box_a.on_submit(new_equation_submit)
+    text_box_b.on_submit(new_equation_submit)
+    text_box_num_points.on_submit(new_equation_submit)
+
+    plt.show()
